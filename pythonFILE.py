@@ -1,38 +1,32 @@
-import requests
-import time
+from aiogram import Bot, Dispatcher
+from aiogram.filters import Command
+from aiogram.types import Message
+
+# Вместо BOT TOKEN HERE нужно вставить токен вашего бота, полученный у @BotFather
+API_TOKEN: str = '6206897348:AAENqclh-o1SObNCLJV69uJCTL5VUVOgjUc'
+
+# Создаем объекты бота и диспетчера
+bot: Bot = Bot(token=API_TOKEN)
+dp: Dispatcher = Dispatcher()
 
 
-API_URL: str = 'https://api.telegram.org/bot'
-API_CATS_URL: str = 'https://api.thecatapi.com/v1/images/search'
-BOT_TOKEN: str = '6206897348:AAENqclh-o1SObNCLJV69uJCTL5VUVOgjUc'
-ERROR_TEXT: str = 'Здесь должна была быть картинка с котиком :('
-
-MAX_COUNTER: int = 1000
-
-offset: int = -2
-counter: int = 0
-chat_id: int
+# Этот хэндлер будет срабатывать на команду "/start"
+@dp.message(Command(commands=["start"]))
+async def process_start_command(message: Message):
+    await message.answer('Привет!\nМеня зовут Эхо-бот!\nНапиши мне что-нибудь')
 
 
-while counter < MAX_COUNTER:
+# Этот хэндлер будет срабатывать на команду "/help"
+@dp.message(Command(commands=['help']))
+async def process_help_command(message: Message):
+    await message.answer('Напиши мне что-нибудь и в ответ '
+                         'я пришлю тебе твое сообщение')
 
-    print('attempt =', counter)  # Чтобы видеть в консоли, что код живет
+# Этот хэндлер будет срабатывать на любые ваши текстовые сообщения,
+# кроме команд "/start" и "/help"
+@dp.message()
+async def send_echo(message: Message):
+    await message.reply(text=message.text)
 
-    updates = requests.get(f'{API_URL}{BOT_TOKEN}/getUpdates?offset={offset + 1}').json()
-    if updates['result']:
-        for result in updates['result']:
-            offset = result['update_id']
-            chat_id = result['message']['from']['id']
-            cat_response = requests.get(API_CATS_URL)
-            user_text: str = updates['result'][0]['message']['text']
-            user_firstname: str = updates['result'][0]['message']['from']['first_name']
-            print({user_firstname: user_text})
-            if cat_response.status_code == 200:
-                link_to_cats = cat_link = cat_response.json()[0]['url']
-                requests.get(f'{API_URL}{BOT_TOKEN}/sendMessage?chat_id={chat_id}&text={user_text} конечно хорошо, но вот картинки с котиками')
-                requests.get(f'{API_URL}{BOT_TOKEN}/sendPhoto?chat_id={chat_id}&photo={link_to_cats}')
-            else:
-                requests.get(f'{API_URL}{BOT_TOKEN}/sendMessage?chat_id={chat_id}&text={ERROR_TEXT}')
-
-    time.sleep(1)
-    counter += 1
+if __name__ == '__main__':
+    dp.run_polling(bot)
